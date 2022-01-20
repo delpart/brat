@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#!/usr/bin/env python
+
 # Convert text and standoff annotations into CoNLL format.
 
 from __future__ import print_function
@@ -220,7 +222,10 @@ def process_files(files):
                     lines = process(sys.stdin)
                 else:
                     with open(fn, 'rU') as f:
-                        lines = process(f)
+                        try:
+                            lines = process(f)
+                        except:
+                            continue
 
                 # TODO: better error handling
                 if lines is None:
@@ -262,11 +267,20 @@ def parse_textbounds(f):
             continue
 
         id_, type_offsets, text = l.split('\t')
-        type_, start, end = type_offsets.split()
-        start, end = int(start), int(end)
+        if ';' not in type_offsets:
+            type_, start, end = type_offsets.split()
+            start, end = int(start), int(end)
 
-        textbounds.append(Textbound(start, end, type_, text))
-
+            textbounds.append(Textbound(start, end, type_, text))
+        else:
+            parts = type_offsets.split(';')
+            type_, start, end = parts[0].split()
+            start, end = int(start), int(end)
+            textbounds.append(Textbound(start, end, type_, text))
+            for p in parts[1:]:
+                start, end = p.split()
+                start, end = int(start), int(end)
+                textbounds.append(Textbound(start, end, type_, text))
     return textbounds
 
 
@@ -320,7 +334,7 @@ def main(argv=None):
         options.outsuffix = '.' + options.outsuffix
     if options.annsuffix and options.annsuffix[0] != '.':
         options.annsuffix = '.' + options.annsuffix
-
+    
     process_files(options.text)
 
 
